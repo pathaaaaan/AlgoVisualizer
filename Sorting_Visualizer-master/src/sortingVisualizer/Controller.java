@@ -87,7 +87,7 @@ public final class Controller implements Initializable {
         aboutBtn.setOnMouseClicked(e -> {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("About Application & Developer");
-            alert.setHeaderText("Developed by Arpit Singh SIkarwar");
+            alert.setHeaderText("Developed by Team ALGOVIZ");
             alert.setContentText(
                     "Visualize Bubble Sort Algorithm, Insertion Sort Algorithm, Selection Sort Algorithm, Shell Sort, Quick Sort Algorithm & Merge Sort Algorithm and see how these work.\n\nTip: If size of array is larger make sure that you decrease the delay time!");
             alert.show();
