@@ -1,4 +1,4 @@
-# Sorting Algorithm Visualizer
+# AlgoVisualizer
 
 This project is a Java-based application that visually demonstrates various sorting algorithms. It provides an interactive interface for users to observe how different sorting techniques work step-by-step.
 
