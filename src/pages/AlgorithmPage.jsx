@@ -6,7 +6,7 @@ import {
   Code, Lightbulb, Clock, HardDrive, CheckCircle2
 } from 'lucide-react';
 import algorithms from '../data/algorithms';
-import { generateBubbleSortSteps } from '../algorithms/bubbleSort';
+import { algorithmRegistry } from '../algorithms';
 import { useAlgorithmStepper } from '../hooks/useAlgorithmStepper';
 import ArrayVisualizer from '../components/visualizer/ArrayVisualizer';
 import VisualizerControls from '../components/visualizer/VisualizerControls';
@@ -19,13 +19,7 @@ const LANG_COLORS = {
   javascript: 'from-amber-400 to-orange-500',
 };
 
-// Algorithms that have a live visualizer
-const VISUALIZER_SUPPORTED = ['bubble-sort'];
-
-// Step generators — keyed by algorithm slug
-const STEP_GENERATORS = {
-  'bubble-sort': generateBubbleSortSteps,
-};
+// Handled via algorithmRegistry
 
 /* ── Helpers ─────────────────────────────────────── */
 function randomArray(size) {
@@ -79,6 +73,18 @@ function Badge({ label, value, color = 'primary' }) {
   );
 }
 
+/* ── Live Stats Box ───────────────────────────────── */
+function StatBox({ label, live = 0, final = 0 }) {
+  return (
+    <div className="p-3 rounded-xl bg-light-surface-hover dark:bg-dark-surface-hover border border-light-border dark:border-dark-border text-center overflow-hidden">
+      <div className="text-[10px] font-bold uppercase tracking-widest text-text-muted mb-1 truncate">{label}</div>
+      <div className="text-xl font-mono font-semibold text-text-dark-primary dark:text-text-primary">
+        {Math.max(0, live)} <span className="text-text-muted text-sm font-normal">/ {final}</span>
+      </div>
+    </div>
+  );
+}
+
 /* ── Code block ───────────────────────────────────── */
 function CodeBlock({ code, lang }) {
   const [copied, setCopied] = useState(false);
@@ -110,13 +116,13 @@ function CodeBlock({ code, lang }) {
 
 /* ── Live Visualizer section ──────────────────────── */
 function LiveVisualizer({ name }) {
-  const generateSteps = STEP_GENERATORS[name];
+  const algDef = algorithmRegistry[name];
   const [arraySize, setArraySize] = useState(16);
   const [customInput, setCustomInput] = useState('');
   const [baseArray, setBaseArray] = useState(() => randomArray(16));
 
   // Memoize steps so we only recompute when baseArray changes
-  const steps = useMemo(() => generateSteps(baseArray), [baseArray, generateSteps]);
+  const steps = useMemo(() => algDef ? algDef.generator(baseArray) : [], [baseArray, algDef]);
 
   const {
     currentStep, currentIndex, totalSteps,
@@ -149,8 +155,8 @@ function LiveVisualizer({ name }) {
       <div className="flex flex-wrap gap-3 text-xs">
         {[
           { color: 'bg-primary', label: 'Unsorted' },
-          { color: 'bg-amber-400', label: 'Comparing' },
-          { color: 'bg-red-500', label: 'Swapping' },
+          { color: 'bg-amber-400', label: 'Comparing/Pivot' },
+          { color: 'bg-red-500', label: 'Swapping/Writing' },
           { color: 'bg-emerald-500', label: 'Sorted' },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 text-text-secondary">
@@ -160,9 +166,19 @@ function LiveVisualizer({ name }) {
         ))}
       </div>
 
+      {/* Stats Panel */}
+      {steps.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatBox label="Comparisons" live={currentStep?.stats?.comparisons} final={steps[steps.length - 1].stats?.comparisons} />
+          <StatBox label="Swaps" live={currentStep?.stats?.swaps} final={steps[steps.length - 1].stats?.swaps} />
+          <StatBox label="Writes" live={currentStep?.stats?.writes} final={steps[steps.length - 1].stats?.writes} />
+          <StatBox label="Steps (Frames)" live={currentIndex + 1} final={totalSteps} />
+        </div>
+      )}
+
       {/* Visualizer canvas */}
       <div className="rounded-xl bg-dark-bg border border-dark-border p-6 min-h-[280px] flex items-end">
-        <ArrayVisualizer step={currentStep} array={baseArray} />
+        <ArrayVisualizer step={currentStep} fallbackArray={baseArray} />
       </div>
 
       {/* Controls */}
@@ -197,7 +213,7 @@ export default function AlgorithmPage() {
   const [activeTab, setActiveTab] = useState('cpp');
 
   const algo = algorithms[name];
-  const hasVisualizer = VISUALIZER_SUPPORTED.includes(name);
+  const hasVisualizer = !!algorithmRegistry[name];
 
   // Not found state
   if (!algo) {

@@ -1,24 +1,31 @@
 export function interpretStep(step) {
+  const defaultPayload = {
+    array: [],
+    colors: {},
+    overlays: { aux: null, buckets: null },
+    ranges: { left: null, right: null, partition: null },
+    stats: { comparisons: 0, swaps: 0, writes: 0, steps: 0 },
+    description: 'Waiting to start...',
+  };
+
   if (!step) {
-    return {
-      array: [],
-      colors: {},
-      stats: { comparisons: 0, swaps: 0, writes: 0, steps: 0 },
-      description: 'Waiting to start...',
-    };
+    return defaultPayload;
   }
 
   const colors = {};
 
-  // Default color map for active elements
   const typeColorMap = {
     compare: 'compare',
     swap: 'swap',
-    overwrite: 'swap', // Red for overwriting elements
-    pivot: 'compare', // Special pivot handling (can be updated in renderer)
+    overwrite: 'swap',
+    pivot: 'pivot',
+    divide: 'compare',
+    merge: 'sorted',
+    heapify: 'compare',
+    count: 'compare',
   };
 
-  // 1. Mark natively marked indices from the step object
+  // 1. Mark natively mapped indices from the step
   if (step.indices && step.type) {
     const color = typeColorMap[step.type] || 'default';
     step.indices.forEach((idx) => {
@@ -26,17 +33,20 @@ export function interpretStep(step) {
     });
   }
 
+  // Highlight pivot explicitly if passed directly
+  if (step.pivotIndex !== undefined) {
+    colors[step.pivotIndex] = 'pivot';
+  }
+
   // 2. Mark confirmed sorted elements safely
   if (step.sortedIndices) {
     step.sortedIndices.forEach((idx) => {
-      // Prioritize active action over sorted green, or just mark them as sorted
       if (!colors[idx] || step.type === 'done') {
         colors[idx] = 'sorted';
       }
     });
   }
 
-  // If done, everything should be marked sorted securely
   if (step.type === 'done' && step.array) {
     step.array.forEach((_, idx) => {
       colors[idx] = 'sorted';
@@ -46,7 +56,16 @@ export function interpretStep(step) {
   return {
     array: step.array || [],
     colors,
-    stats: step.stats || { comparisons: 0, swaps: 0, writes: 0, steps: 0 },
+    overlays: {
+      aux: step.auxiliaryArray || null,
+      buckets: step.buckets || null,
+    },
+    ranges: {
+      left: step.leftRange || null,
+      right: step.rightRange || null,
+      partition: step.partitionRange || null,
+    },
+    stats: step.stats || defaultPayload.stats,
     description: step.description || '',
   };
 }
