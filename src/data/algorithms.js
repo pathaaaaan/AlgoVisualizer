@@ -621,6 +621,28 @@ def bfs(graph, start):
       { input: 'Graph: {0:[1,2], 1:[3], 2:[4], 3:[], 4:[]}, start=0', output: '[0, 1, 3, 2, 4]' },
     ],
   },
+  'singly-linked-list': {
+    title: 'Singly Linked List',
+    category: 'Linked List',
+    overview: 'A singly linked list is a linear data structure consisting of nodes, where each node contains data and a pointer to the next node in the sequence.',
+    steps: [
+      'Traversal: Start at the head and follow the NEXT pointers until null.',
+      'Insertion: Create a new node and update the surrounding NEXT pointers to link it into the list.',
+      'Deletion: Unlink a target node by pointing the previous node to the deleted node\'s NEXT target.'
+    ],
+    complexity: {
+      time: { best: 'O(1)', average: 'O(n)', worst: 'O(n)' },
+      space: 'O(1)'
+    },
+    code: {
+      cpp: '// Linked list node struct implementation coming soon',
+      python: '# Python LL implementation coming soon',
+      javascript: '// JS LL implementation coming soon'
+    },
+    examples: [
+      { input: 'Insert 25 at pos 2', output: 'A -> B -> 25 -> C' }
+    ]
+  }
 };
 
 export default algorithms;

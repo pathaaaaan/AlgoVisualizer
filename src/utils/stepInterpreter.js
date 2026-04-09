@@ -23,6 +23,12 @@ export function interpretStep(step) {
     merge: 'sorted',
     heapify: 'compare',
     count: 'compare',
+    prefix: 'compare',
+    digit: 'compare',
+    bucket: 'compare',
+    collect: 'swap',
+    found: 'sorted',
+    range: 'compare',
   };
 
   // 1. Mark natively mapped indices from the step

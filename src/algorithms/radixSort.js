@@ -18,7 +18,6 @@ export function generateRadixSortSteps(inputArray) {
 
   const pushStep = (stepParams) => {
     stats.steps++;
-    // Deep clone buckets
     const clonedBuckets = currentBuckets.map(b => [...b]);
     
     const step = {
@@ -38,19 +37,23 @@ export function generateRadixSortSteps(inputArray) {
   };
 
   for (let exp = 1; Math.floor(maxVal / exp) > 0; exp *= 10) {
-    // Distribute into buckets based on current digit
+    pushStep({
+      type: 'digit',
+      indices: [],
+      description: `Starting pass for digit at exponent ${exp}.`
+    });
+
     for (let i = 0; i < n; i++) {
       let bucketIndex = Math.floor(arr[i] / exp) % 10;
       currentBuckets[bucketIndex].push(arr[i]);
       
       pushStep({
-        type: 'count', // Use count color
+        type: 'bucket', 
         indices: [i],
-        description: `Inspecting ${arr[i]}. Digit at exponent ${exp} is ${bucketIndex}. Pushing to bucket [${bucketIndex}].`
+        description: `Inspecting ${arr[i]}. Digit is ${bucketIndex}. Pushing to bucket [${bucketIndex}].`
       });
     }
 
-    // Collect elements from buckets
     let arrIndex = 0;
     for (let i = 0; i < 10; i++) {
       while (currentBuckets[i].length > 0) {
@@ -59,7 +62,7 @@ export function generateRadixSortSteps(inputArray) {
         arr[arrIndex] = val;
         
         pushStep({
-          type: 'overwrite',
+          type: 'collect',
           indices: [arrIndex],
           description: `Popping ${val} from Bucket [${i}] back into primary array at index ${arrIndex}.`
         });
@@ -69,7 +72,6 @@ export function generateRadixSortSteps(inputArray) {
     }
   }
 
-  // After all passes elements are sorted
   for (let i = 0; i < n; i++) {
     sortedIndices.push(i);
   }

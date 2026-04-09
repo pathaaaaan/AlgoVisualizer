@@ -6,6 +6,9 @@ import { generateMergeSortSteps } from './mergeSort';
 import { generateHeapSortSteps } from './heapSort';
 import { generateCountingSortSteps } from './countingSort';
 import { generateRadixSortSteps } from './radixSort';
+import { generateLinearSearchSteps } from './linearSearch';
+import { generateBinarySearchSteps } from './binarySearch';
+import { generateLinkedListSteps } from './linkedList';
 
 export const algorithmRegistry = {
   'bubble-sort': {
@@ -47,5 +50,20 @@ export const algorithmRegistry = {
     name: 'Radix Sort',
     generator: generateRadixSortSteps,
     type: 'sorting',
+  },
+  'linear-search': {
+    name: 'Linear Search',
+    generator: generateLinearSearchSteps,
+    type: 'searching',
+  },
+  'binary-search': {
+    name: 'Binary Search',
+    generator: generateBinarySearchSteps,
+    type: 'searching',
+  },
+  'singly-linked-list': {
+    name: 'Singly Linked List',
+    generator: generateLinkedListSteps,
+    type: 'linked_list',
   },
 };

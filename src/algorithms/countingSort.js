@@ -35,7 +35,7 @@ export function generateCountingSortSteps(inputArray) {
 
   // Phase 1: Frequency Array
   for (let i = 0; i < n; i++) {
-    stats.comparisons++; // Not truly comparing array items, but viewing them
+    stats.comparisons++; 
     countArr[arr[i]]++;
     pushStep({
       type: 'count',
@@ -49,7 +49,7 @@ export function generateCountingSortSteps(inputArray) {
     countArr[i] += countArr[i - 1];
   }
   pushStep({
-    type: 'count',
+    type: 'prefix',
     indices: [],
     description: `Converted Context Array into Prefix Sum array resolving final placements.`
   });
@@ -60,13 +60,12 @@ export function generateCountingSortSteps(inputArray) {
     const val = arr[i];
     const pos = countArr[val] - 1;
     
-    // We update countArr first
     countArr[val]--;
     outputArr[pos] = val;
 
     pushStep({
       type: 'overwrite',
-      indices: [i], // Highlight the item we're placing
+      indices: [i], 
       description: `Placing ${val} at index ${pos} in output buffer. Decrementing Aux[${val}].`
     });
   }

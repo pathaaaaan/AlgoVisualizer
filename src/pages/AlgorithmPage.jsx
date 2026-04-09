@@ -9,6 +9,7 @@ import algorithms from '../data/algorithms';
 import { algorithmRegistry } from '../algorithms';
 import { useAlgorithmStepper } from '../hooks/useAlgorithmStepper';
 import ArrayVisualizer from '../components/visualizer/ArrayVisualizer';
+import LinkedListVisualizer from '../components/visualizer/LinkedListVisualizer';
 import VisualizerControls from '../components/visualizer/VisualizerControls';
 
 const LANGS = ['cpp', 'python', 'javascript'];
@@ -117,12 +118,33 @@ function CodeBlock({ code, lang }) {
 /* ── Live Visualizer section ──────────────────────── */
 function LiveVisualizer({ name }) {
   const algDef = algorithmRegistry[name];
+  const isLinkedList = algDef?.type === 'linked_list';
+
   const [arraySize, setArraySize] = useState(16);
   const [customInput, setCustomInput] = useState('');
-  const [baseArray, setBaseArray] = useState(() => randomArray(16));
+  const [baseArray, setBaseArray] = useState(() => isLinkedList ? [10, 20, 30, 40] : randomArray(16));
+  
+  // Specific states for Linked List UI
+  const [llOperation, setLlOperation] = useState('traverse');
+  const [llInsertValue, setLlInsertValue] = useState(25);
+  const [llInsertPos, setLlInsertPos] = useState(2);
+  const [llDeletePos, setLlDeletePos] = useState(1);
+  const [llRunTrigger, setLlRunTrigger] = useState(0);
 
-  // Memoize steps so we only recompute when baseArray changes
-  const steps = useMemo(() => algDef ? algDef.generator(baseArray) : [], [baseArray, algDef]);
+  // Memoize steps so we only recompute when baseArray changes or run is hit
+  const steps = useMemo(() => {
+    if (!algDef) return [];
+    if (algDef.type === 'linked_list') {
+      return algDef.generator({
+        operation: llOperation,
+        values: baseArray,
+        insertValue: Number(llInsertValue),
+        position: llOperation === 'insert' ? Number(llInsertPos) : Number(llDeletePos)
+      });
+    }
+    return algDef.generator(baseArray);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseArray, algDef, llRunTrigger]);
 
   const {
     currentStep, currentIndex, totalSteps,
@@ -143,11 +165,16 @@ function LiveVisualizer({ name }) {
 
   const handleCustomSubmit = useCallback(() => {
     const parsed = parseCustomInput(customInput);
-    if (parsed.length >= 2) {
+    if (parsed.length > 0) {
       setBaseArray(parsed);
       setCustomInput('');
     }
   }, [customInput]);
+
+  const runLLOperation = useCallback(() => {
+     setLlRunTrigger(t => t + 1);
+     reset();
+  }, [reset]);
 
   return (
     <div className="space-y-6">
@@ -155,9 +182,9 @@ function LiveVisualizer({ name }) {
       <div className="flex flex-wrap gap-3 text-xs">
         {[
           { color: 'bg-primary', label: 'Unsorted' },
-          { color: 'bg-amber-400', label: 'Comparing/Pivot' },
-          { color: 'bg-red-500', label: 'Swapping/Writing' },
-          { color: 'bg-emerald-500', label: 'Sorted' },
+          { color: 'bg-amber-400', label: 'Active/Comparing/Traversing' },
+          { color: 'bg-red-500', label: 'Swapping/Deleting' },
+          { color: 'bg-emerald-500', label: 'Sorted/Inserted' },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 text-text-secondary">
             <div className={`w-3 h-3 rounded-sm ${color}`} />
@@ -178,10 +205,68 @@ function LiveVisualizer({ name }) {
 
       {/* Visualizer canvas */}
       <div className="rounded-xl bg-dark-bg border border-dark-border p-6 min-h-[280px] flex items-end">
-        <ArrayVisualizer step={currentStep} fallbackArray={baseArray} />
+        {isLinkedList ? (
+           <LinkedListVisualizer step={currentStep} />
+        ) : (
+           <ArrayVisualizer step={currentStep} fallbackArray={baseArray} />
+        )}
       </div>
 
-      {/* Controls */}
+      {/* Linked List Custom Operations Control Form */}
+      {isLinkedList && (
+        <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-wrap items-end gap-4 shadow-sm">
+           <div className="flex flex-col gap-1.5">
+             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Operation</label>
+             <select 
+                className="bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+                value={llOperation}
+                onChange={(e) => setLlOperation(e.target.value)}
+             >
+                <option value="traverse">Traversal</option>
+                <option value="insert">Insert</option>
+                <option value="delete">Delete</option>
+             </select>
+           </div>
+
+           {llOperation === 'insert' && (
+             <>
+               <div className="flex flex-col gap-1.5">
+                 <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Value</label>
+                 <input type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary" value={llInsertValue} onChange={e => setLlInsertValue(e.target.value)} />
+               </div>
+               <div className="flex flex-col gap-1.5">
+                 <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Position</label>
+                 <input type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary" value={llInsertPos} onChange={e => setLlInsertPos(e.target.value)} />
+               </div>
+             </>
+           )}
+
+           {llOperation === 'delete' && (
+             <div className="flex flex-col gap-1.5">
+               <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Position</label>
+               <input type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary" value={llDeletePos} onChange={e => setLlDeletePos(e.target.value)} />
+             </div>
+           )}
+
+           {/* The user specifically wanted to be able to set the list base array easily too! */}
+           <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">List Values (Comma separated)</label>
+             <input type="text" className="w-full bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary" value={customInput} onChange={e => setCustomInput(e.target.value)} placeholder="10, 20, 30" />
+           </div>
+
+           <button 
+             onClick={() => {
+                if(customInput) { handleCustomSubmit(); }
+                runLLOperation();
+             }}
+             className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center transition-colors"
+           >
+              Run Operation
+           </button>
+        </div>
+      )}
+
+      {/* Standard Engine Controls */}
       <VisualizerControls
         isPlaying={isPlaying}
         isFirst={isFirst}
@@ -191,7 +276,7 @@ function LiveVisualizer({ name }) {
         totalSteps={totalSteps}
         speedMs={speedMs}
         arraySize={arraySize}
-        customInput={customInput}
+        customInput={isLinkedList ? '' : customInput}
         onPlay={play}
         onPause={pause}
         onNext={nextStep}
