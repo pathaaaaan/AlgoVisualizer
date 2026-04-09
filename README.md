@@ -1,49 +1,16 @@
-# AlgoVisualizer
+# React + Vite
 
-This project is a Java-based application that visually demonstrates various sorting algorithms. It provides an interactive interface for users to observe how different sorting techniques work step-by-step.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Features
+Currently, two official plugins are available:
 
-- Visualize popular sorting algorithms (e.g., Bubble Sort, Selection Sort, Insertion Sort)
-- Interactive controls to start, pause, and reset the visualization
-- Adjustable speed and array size
-- Modern UI built with JavaFX
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Getting Started
+## React Compiler
 
-### Prerequisites
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-- Java 8 or higher
-- JavaFX SDK (if not bundled with your JDK)
+## Expanding the ESLint configuration
 
-### Running the Project
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/pathaaaaan/AlgoVisualizer.git
-   ```
-2. Open the project in your preferred IDE (e.g., IntelliJ IDEA, Eclipse).
-3. Run `Main.java` located in `src/sortingVisualizer/`.
-
-## Project Structure
-
-```
-Sorting_Visualizer-master/
-├── src/
-│   ├── RunProject.java
-│   └── sortingVisualizer/
-│       ├── Controller.java
-│       ├── Main.java
-│       └── resources/
-│           ├── bar-chart.png
-│           ├── mainWindow.fxml
-│           └── mainWindowStyles.css
-```
-
-## License
-
-This project is licensed under the MIT License.
-
-## Author
-
-- [pathaaaaan](https://github.com/pathaaaaan)
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
