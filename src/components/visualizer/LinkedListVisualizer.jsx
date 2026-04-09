@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function NodeElement({ value, isActive, type }) {
@@ -22,23 +23,65 @@ function NodeElement({ value, isActive, type }) {
   );
 }
 
-function Arrow() {
+function Arrow({ double }) {
   return (
     <motion.div
       layout
       initial={{ opacity: 0, width: 0 }}
       animate={{ opacity: 1, width: 32 }}
       exit={{ opacity: 0, width: 0 }}
-      className="flex items-center justify-center text-text-muted"
+      className="flex items-center justify-center text-text-muted shrink-0"
     >
       <svg width="32" height="24" viewBox="0 0 32 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M0 12H28M28 12L18 4M28 12L18 20" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M0 12H32M22 6L32 12L22 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        {double && (
+          <path d="M10 6L0 12L10 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        )}
       </svg>
     </motion.div>
   );
 }
 
 export default function LinkedListVisualizer({ step }) {
+  const containerRef = useRef(null);
+  const nodeRefs = useRef({});
+  const [circularPath, setCircularPath] = useState('');
+
+  useEffect(() => {
+    if (!step || step.listType !== 'circular' || !step.nodes || step.nodes.length <= 1) return;
+    
+    // Slight timeout allows Framer Motion layouts to settle before calculation
+    const timer = setTimeout(updatePath, 350);
+    
+    function updatePath() {
+      if (!containerRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      
+      const firstNode = nodeRefs.current[step.nodes[0].id];
+      const lastNode = nodeRefs.current[step.nodes[step.nodes.length - 1].id];
+      
+      if (!firstNode || !lastNode) return;
+      
+      const firstRect = firstNode.getBoundingClientRect();
+      const lastRect = lastNode.getBoundingClientRect();
+      
+      // Calculate start and end offsets relative to the parent bounding frame
+      const startX = (lastRect.left - containerRect.left) + (lastRect.width / 2);
+      const startY = lastRect.bottom - containerRect.top;
+      
+      const endX = (firstRect.left - containerRect.left) + (firstRect.width / 2);
+      const endY = firstRect.bottom - containerRect.top;
+      
+      // Draw smooth curve beneath element block
+      setCircularPath(`M ${startX} ${startY + 5} C ${startX} ${startY + 60}, ${endX} ${endY + 60}, ${endX} ${endY + 12}`);
+    }
+
+    window.addEventListener('resize', updatePath);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updatePath);
+    };
+  }, [step]);
   if (!step || !step.nodes) {
     return (
       <div className="flex items-center justify-center h-48 text-text-muted text-sm">
@@ -74,24 +117,51 @@ export default function LinkedListVisualizer({ step }) {
       </AnimatePresence>
 
       {/* Nodes Track */}
-      <div className="flex items-center justify-center flex-wrap gap-y-8 min-h-32 px-4 w-full">
+      <div ref={containerRef} className="relative flex items-center justify-center flex-wrap gap-y-16 min-h-[160px] px-4 w-full max-w-[800px]">
         <AnimatePresence mode="popLayout">
           {nodes.map((node, i) => (
             <div key={node.id} className="flex items-center">
-              <div className="flex flex-col items-center gap-2">
+              <div ref={el => nodeRefs.current[node.id] = el} className="flex flex-col items-center gap-1.5 relative">
+                <span className="text-[10px] sm:text-xs font-mono font-bold text-text-muted absolute -top-5">
+                  [{i}]
+                </span>
                 <NodeElement value={node.value} isActive={current === node.id} type={type} />
-                <span className="text-[10px] font-mono text-text-muted">Node {node.id}</span>
+                <span className="text-[9px] font-mono text-text-muted/60 mt-1">Node {node.id}</span>
               </div>
               
               {/* Render arrow if not the last node */}
               {i < nodes.length - 1 && (
-                <div className="px-2">
-                  <Arrow />
+                <div className="px-1">
+                  <Arrow double={step.listType === 'doubly'} />
                 </div>
               )}
             </div>
           ))}
         </AnimatePresence>
+
+        {/* Circular Link Back-Edge Overlay */}
+        {step.listType === 'circular' && nodes.length > 1 && circularPath && (
+           <svg className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{ overflow: 'visible' }}>
+              <defs>
+                <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                  <path d="M0,0 L10,5 L0,10 Z" fill="currentColor" className="text-cyan-500" />
+                </marker>
+              </defs>
+              <motion.path 
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                d={circularPath}
+                className="text-cyan-500"
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                fill="none" 
+                strokeDasharray="4 4"
+                strokeLinecap="round"
+                markerEnd="url(#arrowHead)"
+              />
+           </svg>
+        )}
       </div>
       
       {/* Empty State */}

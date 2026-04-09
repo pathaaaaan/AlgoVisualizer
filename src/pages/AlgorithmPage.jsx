@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -116,13 +116,31 @@ function CodeBlock({ code, lang }) {
 }
 
 /* ── Live Visualizer section ──────────────────────── */
+const RendererMap = {
+  sorting: ArrayVisualizer,
+  searching: ArrayVisualizer,
+  stack: ArrayVisualizer,
+  queue: ArrayVisualizer,
+  linked_list: LinkedListVisualizer,
+};
+
 function LiveVisualizer({ name }) {
   const algDef = algorithmRegistry[name];
   const isLinkedList = algDef?.type === 'linked_list';
+  const isSearching = algDef?.type === 'searching';
+  const isStack = algDef?.type === 'stack';
+  const isQueue = algDef?.type === 'queue';
+  const isSorting = algDef?.type === 'sorting';
 
   const [arraySize, setArraySize] = useState(16);
   const [customInput, setCustomInput] = useState('');
-  const [baseArray, setBaseArray] = useState(() => isLinkedList ? [10, 20, 30, 40] : randomArray(16));
+  const [structure, setStructure] = useState(() => {
+    if (isLinkedList) return [10, 20, 30, 40];
+    if (isStack || isQueue) return [10, 20, 30];
+    return randomArray(16);
+  });
+  
+  const [steps, setSteps] = useState([]);
   
   // Specific states for Linked List UI
   const [llOperation, setLlOperation] = useState('traverse');
@@ -131,20 +149,29 @@ function LiveVisualizer({ name }) {
   const [llDeletePos, setLlDeletePos] = useState(1);
   const [llRunTrigger, setLlRunTrigger] = useState(0);
 
-  // Memoize steps so we only recompute when baseArray changes or run is hit
-  const steps = useMemo(() => {
-    if (!algDef) return [];
-    if (algDef.type === 'linked_list') {
-      return algDef.generator({
-        operation: llOperation,
-        values: baseArray,
-        insertValue: Number(llInsertValue),
-        position: llOperation === 'insert' ? Number(llInsertPos) : Number(llDeletePos)
-      });
+  // Stack/Queue specific states
+  const [sqOperation, setSqOperation] = useState('push');
+  const [sqValue, setSqValue] = useState(50);
+  const [sqRunTrigger, setSqRunTrigger] = useState(0);
+
+  // Transition safety
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Searching UX states
+  const [searchTarget, setSearchTarget] = useState(30);
+  const [searchTrigger, setSearchTrigger] = useState(0);
+
+  useEffect(() => {
+    if (!algDef) return;
+
+    if (isSorting || isSearching) {
+       // Auto-generate steps for read-only or full-data algorithms
+       const newSteps = isSearching 
+         ? algDef.generator(structure, Number(searchTarget))
+         : algDef.generator(structure);
+       setSteps(newSteps);
     }
-    return algDef.generator(baseArray);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseArray, algDef, llRunTrigger]);
+  }, [structure, algDef, isSearching, isSorting, searchTarget]);
 
   const {
     currentStep, currentIndex, totalSteps,
@@ -155,36 +182,101 @@ function LiveVisualizer({ name }) {
   } = useAlgorithmStepper(steps);
 
   const handleShuffle = useCallback(() => {
-    setBaseArray(randomArray(arraySize));
+    setStructure(randomArray(arraySize));
   }, [arraySize]);
 
   const handleArraySizeChange = useCallback((size) => {
     setArraySize(size);
-    setBaseArray(randomArray(size));
+    setStructure(randomArray(size));
   }, []);
 
   const handleCustomSubmit = useCallback(() => {
     const parsed = parseCustomInput(customInput);
     if (parsed.length > 0) {
-      setBaseArray(parsed);
+      setStructure(parsed);
       setCustomInput('');
     }
   }, [customInput]);
 
-  const runLLOperation = useCallback(() => {
-     setLlRunTrigger(t => t + 1);
+  const runOperation = useCallback(() => {
+     if (isPlaying || isTransitioning) return;
+     
+     setIsTransitioning(true);
+     const current = [...structure];
+     let updated = [...current];
+     let generatedSteps = [];
+
+     if (isLinkedList) {
+        generatedSteps = algDef.generator({
+          type: name === 'doubly-linked-list' ? 'doubly' : name === 'circular-linked-list' ? 'circular' : 'singly',
+          operation: llOperation,
+          values: current,
+          insertValue: Number(llInsertValue),
+          position: llOperation === 'insert' ? Number(llInsertPos) : Number(llDeletePos)
+        });
+
+        // Compute updated state for LL (simplified for persistence)
+        if (llOperation === 'insert') {
+          updated.splice(Number(llInsertPos), 0, Number(llInsertValue));
+        } else if (llOperation === 'delete') {
+          updated.splice(Number(llDeletePos), 1);
+        }
+     } 
+     else if (isStack || isQueue) {
+        generatedSteps = algDef.generator({
+          operation: sqOperation,
+          values: current,
+          pushValue: Number(sqValue),
+          enqueueValue: Number(sqValue)
+        });
+
+        // Compute updated state
+        if (sqOperation === 'push' || sqOperation === 'enqueue') {
+          updated.push(Number(sqValue));
+        } else if (sqOperation === 'pop') {
+          if (updated.length > 0) updated.pop();
+        } else if (sqOperation === 'dequeue') {
+          if (updated.length > 0) updated.shift();
+        }
+     }
+
+     setSteps(generatedSteps);
+     setStructure(updated);
      reset();
-  }, [reset]);
+     
+     // Unlock after small delay
+     setTimeout(() => setIsTransitioning(false), 300);
+  }, [isPlaying, isTransitioning, structure, isLinkedList, isStack, isQueue, algDef, name, llOperation, llInsertValue, llInsertPos, llDeletePos, sqOperation, sqValue, reset]);
+
+  // Handle auto-play and error pausing
+  useEffect(() => {
+     // Trigger auto-play on new operation
+     if (llRunTrigger > 0 || searchTrigger > 0 || sqRunTrigger > 0) {
+         setTimeout(() => { play(); }, 150);
+     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [llRunTrigger, searchTrigger, sqRunTrigger]);
+
+  useEffect(() => {
+     // Auto-pause on error steps to let user digest the failure
+     if (currentStep?.type === 'error' && isPlaying) {
+        pause();
+     }
+  }, [currentStep, isPlaying, pause]);
+
+  const Visualizer = RendererMap[algDef?.type] || ArrayVisualizer;
+
+  const isControlDisabled = isPlaying || isTransitioning;
 
   return (
     <div className="space-y-6">
       {/* Color legend */}
       <div className="flex flex-wrap gap-3 text-xs">
         {[
-          { color: 'bg-primary', label: 'Unsorted' },
-          { color: 'bg-amber-400', label: 'Active/Comparing/Traversing' },
-          { color: 'bg-red-500', label: 'Swapping/Deleting' },
-          { color: 'bg-emerald-500', label: 'Sorted/Inserted' },
+          { color: 'bg-primary', label: 'Unsorted / Default' },
+          { color: 'bg-amber-400', label: 'Active / Peek / Traverse' },
+          { color: 'bg-red-500', label: 'Swap / Pop / Dequeue / Error' },
+          { color: 'bg-emerald-500', label: 'Sorted / Push / Enqueue' },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1.5 text-text-secondary">
             <div className={`w-3 h-3 rounded-sm ${color}`} />
@@ -205,20 +297,34 @@ function LiveVisualizer({ name }) {
 
       {/* Visualizer canvas */}
       <div className="rounded-xl bg-dark-bg border border-dark-border p-6 min-h-[280px] flex items-end">
-        {isLinkedList ? (
-           <LinkedListVisualizer step={currentStep} />
-        ) : (
-           <ArrayVisualizer step={currentStep} fallbackArray={baseArray} />
-        )}
+        <Visualizer step={currentStep} structure={structure} />
       </div>
 
-      {/* Linked List Custom Operations Control Form */}
+      {/* SEARCHING CONTROLS */}
+      {isSearching && (
+        <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-wrap items-end gap-4 shadow-sm">
+           <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Search Target</label>
+             <input disabled={isControlDisabled} type="number" className="w-full bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary focus:border-primary focus:outline-none disabled:opacity-50" value={searchTarget} onChange={e => setSearchTarget(e.target.value)} placeholder="e.g 42" />
+           </div>
+           <button 
+             disabled={isControlDisabled}
+             onClick={runOperation}
+             className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center transition-colors disabled:bg-slate-700"
+           >
+              Set & Run
+           </button>
+        </div>
+      )}
+
+      {/* LINKED LIST CONTROLS */}
       {isLinkedList && (
         <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-wrap items-end gap-4 shadow-sm">
            <div className="flex flex-col gap-1.5">
              <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Operation</label>
              <select 
-                className="bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary"
+                disabled={isControlDisabled}
+                className="bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary disabled:opacity-50"
                 value={llOperation}
                 onChange={(e) => setLlOperation(e.target.value)}
              >
@@ -232,11 +338,11 @@ function LiveVisualizer({ name }) {
              <>
                <div className="flex flex-col gap-1.5">
                  <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Value</label>
-                 <input type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary" value={llInsertValue} onChange={e => setLlInsertValue(e.target.value)} />
+                 <input disabled={isControlDisabled} type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary disabled:opacity-50" value={llInsertValue} onChange={e => setLlInsertValue(e.target.value)} />
                </div>
                <div className="flex flex-col gap-1.5">
                  <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Position</label>
-                 <input type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary" value={llInsertPos} onChange={e => setLlInsertPos(e.target.value)} />
+                 <input disabled={isControlDisabled} type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary disabled:opacity-50" value={llInsertPos} onChange={e => setLlInsertPos(e.target.value)} />
                </div>
              </>
            )}
@@ -244,22 +350,66 @@ function LiveVisualizer({ name }) {
            {llOperation === 'delete' && (
              <div className="flex flex-col gap-1.5">
                <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Position</label>
-               <input type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary" value={llDeletePos} onChange={e => setLlDeletePos(e.target.value)} />
+               <input disabled={isControlDisabled} type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary disabled:opacity-50" value={llDeletePos} onChange={e => setLlDeletePos(e.target.value)} />
              </div>
            )}
 
-           {/* The user specifically wanted to be able to set the list base array easily too! */}
            <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">List Values (Comma separated)</label>
-             <input type="text" className="w-full bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary" value={customInput} onChange={e => setCustomInput(e.target.value)} placeholder="10, 20, 30" />
+             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">List Values</label>
+             <input disabled={isControlDisabled} type="text" className="w-full bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary disabled:opacity-50" value={customInput} onChange={e => setCustomInput(e.target.value)} placeholder="10, 20, 30" />
            </div>
 
            <button 
+             disabled={isControlDisabled}
              onClick={() => {
                 if(customInput) { handleCustomSubmit(); }
-                runLLOperation();
+                runOperation();
              }}
-             className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center transition-colors"
+             className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center transition-colors disabled:bg-slate-700"
+           >
+              Run Operation
+           </button>
+        </div>
+      )}
+
+      {/* STACK & QUEUE CONTROLS */}
+      {(isStack || isQueue) && (
+        <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 flex flex-wrap items-end gap-4 shadow-sm">
+           <div className="flex flex-col gap-1.5">
+             <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Operation</label>
+             <select 
+                disabled={isControlDisabled}
+                className="bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary focus:outline-none focus:border-primary disabled:opacity-50"
+                value={sqOperation}
+                onChange={(e) => setSqOperation(e.target.value)}
+             >
+                {isStack ? (
+                   <>
+                    <option value="push">Push</option>
+                    <option value="pop">Pop</option>
+                    <option value="peek">Peek (Top)</option>
+                   </>
+                ) : (
+                   <>
+                    <option value="enqueue">Enqueue</option>
+                    <option value="dequeue">Dequeue</option>
+                    <option value="peek">Peek (Front)</option>
+                   </>
+                )}
+             </select>
+           </div>
+
+           {(sqOperation === 'push' || sqOperation === 'enqueue') && (
+             <div className="flex flex-col gap-1.5">
+               <label className="text-xs font-semibold text-text-muted uppercase tracking-wider">Value</label>
+               <input disabled={isControlDisabled} type="number" className="w-20 bg-dark-surface border border-dark-border text-sm rounded-lg px-3 py-2 text-text-primary disabled:opacity-50" value={sqValue} onChange={e => setSqValue(e.target.value)} />
+             </div>
+           )}
+
+           <button 
+             disabled={isControlDisabled}
+             onClick={runOperation}
+             className="px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold flex items-center justify-center transition-colors disabled:bg-slate-700"
            >
               Run Operation
            </button>
@@ -276,7 +426,7 @@ function LiveVisualizer({ name }) {
         totalSteps={totalSteps}
         speedMs={speedMs}
         arraySize={arraySize}
-        customInput={isLinkedList ? '' : customInput}
+        customInput={ (isLinkedList || isStack || isQueue) ? '' : customInput}
         onPlay={play}
         onPause={pause}
         onNext={nextStep}

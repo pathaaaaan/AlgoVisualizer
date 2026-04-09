@@ -506,6 +506,101 @@ function heapify(arr, n, i) {
       { input: '[12, 11, 13, 5, 6, 7]', output: '[5, 6, 7, 11, 12, 13]' },
     ],
   },
+  'counting-sort': {
+    title: 'Counting Sort',
+    category: 'Array → Sorting',
+    overview: 'Counting Sort is a non-comparison-based sorting algorithm that works by counting the occurrences of each unique element in the input array and using these counts to determine the position of each element in the output array.',
+    steps: [
+      'Find the maximum element in the array.',
+      'Create a count array of size (max + 1) and initialize with 0.',
+      'Count each element and update the count array.',
+      'Compute prefix sums in the count array to find positions.',
+      'Iterate backwards through the original array and place elements in the output buffer.',
+    ],
+    complexity: {
+      time: { best: 'O(n + k)', average: 'O(n + k)', worst: 'O(n + k)' },
+      space: 'O(k)',
+    },
+    code: {
+      cpp: `void countingSort(int arr[], int n) {
+    int max = arr[0];
+    for (int i = 1; i < n; i++) if (arr[i] > max) max = arr[i];
+    int count[max + 1] = {0};
+    for (int i = 0; i < n; i++) count[arr[i]]++;
+    for (int i = 1; i <= max; i++) count[i] += count[i-1];
+    int output[n];
+    for (int i = n - 1; i >= 0; i--) {
+        output[count[arr[i]] - 1] = arr[i];
+        count[arr[i]]--;
+    }
+    for (int i = 0; i < n; i++) arr[i] = output[i];
+}`,
+      python: `def counting_sort(arr):
+    max_val = max(arr)
+    count = [0] * (max_val + 1)
+    for x in arr:
+        count[x] += 1
+    for i in range(1, len(count)):
+        count[i] += count[i-1]
+    output = [0] * len(arr)
+    for x in reversed(arr):
+        output[count[x] - 1] = x
+        count[x] -= 1
+    return output`,
+      javascript: `function countingSort(arr) {
+  const max = Math.max(...arr);
+  const count = new Array(max + 1).fill(0);
+  arr.forEach(x => count[x]++);
+  for (let i = 1; i < count.length; i++) count[i] += count[i-1];
+  const output = new Array(arr.length);
+  for (let i = arr.length - 1; i >= 0; i--) {
+    output[count[arr[i]] - 1] = arr[i];
+    count[arr[i]]--;
+  }
+  return output;
+}`,
+    },
+    examples: [
+      { input: '[4, 2, 2, 8, 3, 3, 1]', output: '[1, 2, 2, 3, 3, 4, 8]' },
+    ],
+  },
+  'radix-sort': {
+    title: 'Radix Sort',
+    category: 'Array → Sorting',
+    overview: 'Radix Sort is a non-comparison based integer sorting algorithm that sorts data with integer keys by grouping keys by the individual digits which share the same significant position and value.',
+    steps: [
+      'Find the maximum number to know the number of digits.',
+      'Do counting sort for each digit, starting from the least significant digit (LSD) up to the most significant digit (MSD).',
+      'During each pass, elements are distributed into 10 buckets (0-9) based on the current digit.',
+      'Collect elements back from buckets to rebuild the array for the next digit pass.',
+    ],
+    complexity: {
+      time: { best: 'O(nk)', average: 'O(nk)', worst: 'O(nk)' },
+      space: 'O(n + k)',
+    },
+    code: {
+      cpp: `void radixSort(int arr[], int n) {
+    int max = getMax(arr, n);
+    for (int exp = 1; max / exp > 0; exp *= 10)
+        countSort(arr, n, exp);
+}`,
+      python: `def radix_sort(arr):
+    max_val = max(arr)
+    exp = 1
+    while max_val // exp > 0:
+        counting_sort_by_digit(arr, exp)
+        exp *= 10`,
+      javascript: `function radixSort(arr) {
+  let max = Math.max(...arr);
+  for (let exp = 1; Math.floor(max / exp) > 0; exp *= 10) {
+    countingSortByDigit(arr, exp);
+  }
+}`,
+    },
+    examples: [
+      { input: '[170, 45, 75, 90, 802, 24, 2, 66]', output: '[2, 24, 45, 66, 75, 90, 170, 802]' },
+    ],
+  },
 
   'bfs': {
     title: 'Breadth-First Search',
@@ -635,12 +730,456 @@ def bfs(graph, start):
       space: 'O(1)'
     },
     code: {
-      cpp: '// Linked list node struct implementation coming soon',
-      python: '# Python LL implementation coming soon',
-      javascript: '// JS LL implementation coming soon'
+      cpp: `struct Node {
+    int data;
+    Node* next;
+    Node(int val) : data(val), next(nullptr) {}
+};
+
+class SinglyLinkedList {
+    Node* head;
+public:
+    SinglyLinkedList() : head(nullptr) {}
+
+    void insert(int val) {
+        Node* newNode = new Node(val);
+        if (!head) { head = newNode; return; }
+        Node* temp = head;
+        while (temp->next) temp = temp->next;
+        temp->next = newNode;
+    }
+
+    void remove(int val) {
+        if (!head) return;
+        if (head->data == val) {
+            Node* temp = head;
+            head = head->next;
+            delete temp;
+            return;
+        }
+        Node* temp = head;
+        while (temp->next && temp->next->data != val)
+            temp = temp->next;
+        if (temp->next) {
+            Node* del = temp->next;
+            temp->next = temp->next->next;
+            delete del;
+        }
+    }
+};`,
+      python: `class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+
+class SinglyLinkedList:
+    def __init__(self):
+        self.head = None
+
+    def insert(self, data):
+        new_node = Node(data)
+        if not self.head:
+            self.head = new_node
+            return
+        curr = self.head
+        while curr.next:
+            curr = curr.next
+        curr.next = new_node
+
+    def delete(self, key):
+        curr = self.head
+        if curr and curr.data == key:
+            self.head = curr.next
+            return
+        prev = None
+        while curr and curr.data != key:
+            prev = curr
+            curr = curr.next
+        if curr:
+            prev.next = curr.next`,
+      javascript: `class Node {
+  constructor(data) {
+    this.data = data;
+    this.next = null;
+  }
+}
+
+class LinkedList {
+  constructor() {
+    this.head = null;
+  }
+
+  insert(data) {
+    const newNode = new Node(data);
+    if (!this.head) {
+      this.head = newNode;
+      return;
+    }
+    let curr = this.head;
+    while (curr.next) curr = curr.next;
+    curr.next = newNode;
+  }
+
+  delete(data) {
+    if (!this.head) return;
+    if (this.head.data === data) {
+      this.head = this.head.next;
+      return;
+    }
+    let curr = this.head;
+    while (curr.next && curr.next.data !== data)
+      curr = curr.next;
+    if (curr.next) curr.next = curr.next.next;
+  }
+}`
     },
     examples: [
       { input: 'Insert 25 at pos 2', output: 'A -> B -> 25 -> C' }
+    ]
+  },
+  'doubly-linked-list': {
+    title: 'Doubly Linked List',
+    category: 'Linked List',
+    overview: 'A doubly linked list contains an extra pointer, typically called previous pointer, together with next pointer and data which are there in singly linked list.',
+    steps: [
+      'Traversal: Move forwards via NEXT or backward via PREV.',
+      'Insertion: Link both NEXT and PREV nodes dynamically linking boundaries.',
+      'Deletion: Redirect surrounding nodes linking backwards over targeted items.'
+    ],
+    complexity: {
+      time: { best: 'O(1)', average: 'O(n)', worst: 'O(n)' },
+      space: 'O(1)'
+    },
+    code: {
+      cpp: `struct Node {
+    int data;
+    Node* next;
+    Node* prev;
+    Node(int val) : data(val), next(nullptr), prev(nullptr) {}
+};
+
+class DoublyLinkedList {
+    Node *head, *tail;
+public:
+    DoublyLinkedList() : head(nullptr), tail(nullptr) {}
+
+    void insertTail(int val) {
+        Node* newNode = new Node(val);
+        if (!tail) { head = tail = newNode; return; }
+        tail->next = newNode;
+        newNode->prev = tail;
+        tail = newNode;
+    }
+
+    void remove(int val) {
+        Node* curr = head;
+        while (curr && curr->data != val) curr = curr->next;
+        if (!curr) return;
+        if (curr->prev) curr->prev->next = curr->next;
+        else head = curr->next;
+        if (curr->next) curr->next->prev = curr->prev;
+        else tail = curr->prev;
+        delete curr;
+    }
+};`,
+      python: `class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+        self.prev = None
+
+class DoublyLinkedList:
+    def __init__(self):
+        self.head = None
+
+    def insert(self, data):
+        new_node = Node(data)
+        if not self.head:
+            self.head = new_node
+            return
+        curr = self.head
+        while curr.next:
+            curr = curr.next
+        curr.next = new_node
+        new_node.prev = curr
+
+    def delete(self, node):
+        if self.head == node:
+            self.head = node.next
+        if node.next:
+            node.next.prev = node.prev
+        if node.prev:
+            node.prev.next = node.next`,
+      javascript: `class Node {
+  constructor(data) {
+    this.data = data;
+    this.next = null;
+    this.prev = null;
+  }
+}
+
+class DoublyLinkedList {
+  constructor() {
+    this.head = null;
+    this.tail = null;
+  }
+
+  insertTail(data) {
+    const newNode = new Node(data);
+    if (!this.tail) {
+      this.head = newNode;
+      this.tail = newNode;
+      return;
+    }
+    this.tail.next = newNode;
+    newNode.prev = this.tail;
+    this.tail = newNode;
+  }
+
+  delete(data) {
+    let curr = this.head;
+    while (curr && curr.data !== data) curr = curr.next;
+    if (!curr) return;
+    if (curr.prev) curr.prev.next = curr.next;
+    else this.head = curr.next;
+    if (curr.next) curr.next.prev = curr.prev;
+    else this.tail = curr.prev;
+  }
+}`
+    },
+    examples: [
+      { input: 'Reverse Traverse', output: 'C -> B -> A' }
+    ]
+  },
+  'circular-linked-list': {
+    title: 'Circular Linked List',
+    category: 'Linked List',
+    overview: 'A circular linked list is a list where all nodes are connected to form a circle. There is no NULL at the end.',
+    steps: [
+      'Traversal: Start at head and traverse until you reach the head again.',
+      'Insertion: Update pointers, ensuring the tail always loops into the latest head.',
+      'Deletion: Re-bind tail pointers if head or tail elements are destructed.'
+    ],
+    complexity: {
+      time: { best: 'O(1)', average: 'O(n)', worst: 'O(n)' },
+      space: 'O(1)'
+    },
+    code: {
+      cpp: `struct Node {
+    int data;
+    Node* next;
+    Node(int val) : data(val), next(nullptr) {}
+};
+
+class CircularLinkedList {
+    Node* head;
+public:
+    CircularLinkedList() : head(nullptr) {}
+
+    void insert(int val) {
+        Node* newNode = new Node(val);
+        if (!head) {
+            head = newNode;
+            newNode->next = head;
+            return;
+        }
+        Node* temp = head;
+        while (temp->next != head) temp = temp->next;
+        temp->next = newNode;
+        newNode->next = head;
+    }
+
+    void display() {
+        if (!head) return;
+        Node* temp = head;
+        do {
+            cout << temp->data << " ";
+            temp = temp->next;
+        } while (temp != head);
+    }
+};`,
+      python: `class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+
+class CircularLinkedList:
+    def __init__(self):
+        self.head = None
+
+    def insert(self, data):
+        new_node = Node(data)
+        if not self.head:
+            self.head = new_node
+            new_node.next = self.head
+            return
+        curr = self.head
+        while curr.next != self.head:
+            curr = curr.next
+        curr.next = new_node
+        new_node.next = self.head
+
+    def traverse(self):
+        if not self.head: return
+        curr = self.head
+        while True:
+            print(curr.data)
+            curr = curr.next
+            if curr == self.head: break`,
+      javascript: `class Node {
+  constructor(data) {
+    this.data = data;
+    this.next = null;
+  }
+}
+
+class CircularLinkedList {
+  constructor() {
+    this.head = null;
+  }
+
+  insert(data) {
+    const newNode = new Node(data);
+    if (!this.head) {
+      this.head = newNode;
+      newNode.next = this.head;
+      return;
+    }
+    let curr = this.head;
+    while (curr.next !== this.head) curr = curr.next;
+    curr.next = newNode;
+    newNode.next = this.head;
+  }
+
+  traverse() {
+    if (!this.head) return;
+    let curr = this.head;
+    do {
+      console.log(curr.data);
+      curr = curr.next;
+    } while (curr !== this.head);
+  }
+}`
+    },
+    examples: [
+      { input: 'Traverse Circle', output: 'A -> B -> C -> A...' }
+    ]
+  },
+  'stack': {
+    title: 'Stack',
+    category: 'Linear Data Structures',
+    overview: 'A Stack is a linear data structure that follows the Principle of Last In First Out (LIFO). The last element inserted is the first one to be removed. It is analogous to a pile of plates where you can only add or remove from the top.',
+    steps: [
+      'Initialize an empty stack (using array or linked list).',
+      'Push: Add an element to the top of the stack.',
+      'Pop: Remove the most recently added element from the top.',
+      'Peek: View the top element without removing it.',
+      'Handle Overflow (full stack) or Underflow (empty stack) conditions.'
+    ],
+    complexity: {
+      time: { best: 'O(1)', average: 'O(1)', worst: 'O(1)' },
+      space: 'O(n)'
+    },
+    code: {
+      cpp: `include <stack>
+#include <iostream>
+
+int main() {
+    std::stack<int> s;
+    s.push(10);
+    s.push(20);
+    std::cout << "Top: " << s.top();
+    s.pop();
+    return 0;
+}`,
+      python: `class Stack:
+    def __init__(self):
+        self.items = []
+    def push(self, item):
+        self.items.append(item)
+    def pop(self):
+        return self.items.pop() if not self.is_empty() else None
+    def peek(self):
+        return self.items[-1] if not self.is_empty() else None
+    def is_empty(self):
+        return len(self.items) == 0`,
+      javascript: `class Stack {
+  constructor() {
+    this.items = [];
+  }
+  push(element) {
+    this.items.push(element);
+  }
+  pop() {
+    if (this.isEmpty()) return "Underflow";
+    return this.items.pop();
+  }
+  peek() {
+    return this.items[this.items.length - 1];
+  }
+  isEmpty() {
+    return this.items.length === 0;
+  }
+}`
+    },
+    examples: [
+      { input: 'Push(10), Push(20), Pop()', output: '20 removed, 10 remains' }
+    ]
+  },
+  'queue': {
+    title: 'Queue',
+    category: 'Linear Data Structures',
+    overview: 'A Queue is a linear data structure that follows the First In First Out (FIFO) principle. The first element added to the queue will be the first one to be removed, much like a line of people waiting for service.',
+    steps: [
+      'Initialize an empty queue with Front and Rear pointers.',
+      'Enqueue: Add an element to the Rear of the queue.',
+      'Dequeue: Remove the element from the Front of the queue.',
+      'Peek: View the Front element without removing it.',
+      'Elements shift forward (in simple array impl) or pointers move (in circular queue/list).'
+    ],
+    complexity: {
+      time: { best: 'O(1)', average: 'O(1)', worst: 'O(1)' },
+      space: 'O(n)'
+    },
+    code: {
+      cpp: `#include <queue>
+#include <iostream>
+
+int main() {
+    std::queue<int> q;
+    q.push(10);
+    q.push(20);
+    std::cout << "Front: " << q.front();
+    q.pop();
+    return 0;
+}`,
+      python: `from collections import deque
+
+queue = deque()
+queue.append(10) # Enqueue
+queue.append(20)
+front = queue.popleft() # Dequeue`,
+      javascript: `class Queue {
+  constructor() {
+    this.items = [];
+  }
+  enqueue(element) {
+    this.items.push(element);
+  }
+  dequeue() {
+    if (this.isEmpty()) return "Underflow";
+    return this.items.shift();
+  }
+  front() {
+    return this.items[0];
+  }
+  isEmpty() {
+    return this.items.length === 0;
+  }
+}`
+    },
+    examples: [
+      { input: 'Enqueue(A), Enqueue(B), Dequeue()', output: 'A removed, B remains' }
     ]
   }
 };

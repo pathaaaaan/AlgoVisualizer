@@ -49,6 +49,43 @@ export function useAlgorithmStepper(steps = []) {
     }, speedMs);
   }, [speedMs, steps.length, stopInterval]);
 
+  // ── Controls ──────────────────────────────────────
+  const reset = useCallback(() => {
+    setIsPlaying(false);
+    setCurrentIndex(0);
+    stopInterval();
+  }, [stopInterval]);
+
+  const play = useCallback(() => {
+    if (!isLast) setIsPlaying(true);
+  }, [isLast]);
+
+  const pause = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
+  const nextStep = useCallback(() => {
+    if (!isLast) setCurrentIndex((i) => i + 1);
+  }, [isLast]);
+
+  const prevStep = useCallback(() => {
+    if (!isFirst) setCurrentIndex((i) => i - 1);
+  }, [isFirst]);
+
+  const goTo = useCallback(
+    (index) => {
+      if (index >= 0 && index < totalSteps) {
+        setCurrentIndex(index);
+      }
+    },
+    [totalSteps]
+  );
+
+  const changeSpeed = useCallback((ms) => {
+    setSpeedMs(ms);
+  }, []);
+
+  // ── Side Effects ──────────────────────────────────
   // Start/stop interval based on isPlaying
   useEffect(() => {
     if (isPlaying && !isLast) {
@@ -68,45 +105,9 @@ export function useAlgorithmStepper(steps = []) {
 
   // Reset when steps change (new algorithm / new array)
   useEffect(() => {
-    setCurrentIndex(0);
-    setIsPlaying(false);
-    stopInterval();
-  }, [steps, stopInterval]);
+    reset();
+  }, [steps, reset]);
 
-  // ── Controls ──────────────────────────────────────
-  const play = useCallback(() => {
-    if (!isLast) setIsPlaying(true);
-  }, [isLast]);
-
-  const pause = useCallback(() => {
-    setIsPlaying(false);
-  }, []);
-
-  const nextStep = useCallback(() => {
-    if (!isLast) setCurrentIndex((i) => i + 1);
-  }, [isLast]);
-
-  const prevStep = useCallback(() => {
-    if (!isFirst) setCurrentIndex((i) => i - 1);
-  }, [isFirst]);
-
-  const reset = useCallback(() => {
-    setIsPlaying(false);
-    setCurrentIndex(0);
-  }, []);
-
-  const goTo = useCallback(
-    (index) => {
-      if (index >= 0 && index < totalSteps) {
-        setCurrentIndex(index);
-      }
-    },
-    [totalSteps]
-  );
-
-  const changeSpeed = useCallback((ms) => {
-    setSpeedMs(ms);
-  }, []);
 
   return {
     currentStep,

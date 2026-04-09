@@ -6,6 +6,8 @@ import { generateMergeSortSteps } from './mergeSort';
 import { generateHeapSortSteps } from './heapSort';
 import { generateCountingSortSteps } from './countingSort';
 import { generateRadixSortSteps } from './radixSort';
+import { generateStackSteps } from './stack';
+import { generateQueueSteps } from './queue';
 import { generateLinearSearchSteps } from './linearSearch';
 import { generateBinarySearchSteps } from './binarySearch';
 import { generateLinkedListSteps } from './linkedList';
@@ -65,5 +67,25 @@ export const algorithmRegistry = {
     name: 'Singly Linked List',
     generator: generateLinkedListSteps,
     type: 'linked_list',
+  },
+  'doubly-linked-list': {
+    name: 'Doubly Linked List',
+    generator: generateLinkedListSteps,
+    type: 'linked_list',
+  },
+  'circular-linked-list': {
+    name: 'Circular Linked List',
+    generator: generateLinkedListSteps,
+    type: 'linked_list',
+  },
+  'stack': {
+    name: 'Stack',
+    generator: generateStackSteps,
+    type: 'stack',
+  },
+  'queue': {
+    name: 'Queue',
+    generator: generateQueueSteps,
+    type: 'queue',
   },
 };

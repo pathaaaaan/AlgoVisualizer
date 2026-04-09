@@ -79,17 +79,17 @@ export function generateBinarySearchSteps(inputArray, target) {
 
   if (foundIndex === -1) {
     pushStep({
-      type: 'done',
+      type: 'not_found',
       indices: [],
       description: `Target ${target} was not found in the array.`
     });
-  } else {
-    pushStep({
-      type: 'done',
-      indices: [foundIndex],
-      description: `Search completed successfully.`
-    });
-  }
+  } 
+
+  pushStep({
+    type: 'done',
+    indices: foundIndex !== -1 ? [foundIndex] : [],
+    description: foundIndex !== -1 ? `Search completed successfully.` : `Search failed.`
+  });
 
   return steps;
 }

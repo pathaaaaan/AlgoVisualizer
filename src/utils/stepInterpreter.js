@@ -6,6 +6,7 @@ export function interpretStep(step) {
     ranges: { left: null, right: null, partition: null },
     stats: { comparisons: 0, swaps: 0, writes: 0, steps: 0 },
     description: 'Waiting to start...',
+    listType: 'default',
   };
 
   if (!step) {
@@ -28,7 +29,15 @@ export function interpretStep(step) {
     bucket: 'compare',
     collect: 'swap',
     found: 'sorted',
+    not_found: 'swap',
     range: 'compare',
+    // Stack and Queue specific
+    push: 'sorted',
+    peek: 'compare',
+    pop: 'swap',
+    enqueue: 'sorted',
+    dequeue: 'swap',
+    error: 'swap',
   };
 
   // 1. Mark natively mapped indices from the step
@@ -62,6 +71,7 @@ export function interpretStep(step) {
   return {
     array: step.array || [],
     colors,
+    listType: step.listType || 'default',
     overlays: {
       aux: step.auxiliaryArray || null,
       buckets: step.buckets || null,

@@ -7,14 +7,14 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-light-bg dark:bg-dark-bg">
+    <div className="h-screen flex flex-col bg-light-bg dark:bg-dark-bg overflow-hidden">
       <Navbar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <div className="flex">
+      <div className="flex flex-1 overflow-hidden">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
         {/* Main content */}
-        <main className="flex-1 min-h-[calc(100vh-4rem)] overflow-x-hidden">
+        <main className="flex-1 overflow-y-auto">
           <div className="max-w-6xl mx-auto px-4 md:px-8 py-8">
             <Outlet />
           </div>

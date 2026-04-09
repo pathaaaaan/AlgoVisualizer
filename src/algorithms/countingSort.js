@@ -1,13 +1,13 @@
 export function generateCountingSortSteps(inputArray) {
-  const arr = [...inputArray];
   const steps = [];
-  const n = arr.length;
-  const sortedIndices = [];
-  
+  const n = inputArray.length;
   if (n === 0) return steps;
 
-  let maxVal = Math.max(...arr);
-  let countArr = new Array(maxVal + 1).fill(0);
+  const maxVal = Math.max(...inputArray);
+  const countArr = new Array(maxVal + 1).fill(0);
+  
+  // We'll show the original array during counting, then the output array being built during placement.
+  let visualizationArray = [...inputArray];
 
   let stats = {
     comparisons: 0,
@@ -16,78 +16,54 @@ export function generateCountingSortSteps(inputArray) {
     steps: 0,
   };
 
-  const pushStep = (stepParams) => {
+  const pushStep = (type, description, indices = []) => {
     stats.steps++;
     const step = {
-      ...stepParams,
-      array: [...arr],
+      type,
+      array: [...visualizationArray],
       auxiliaryArray: [...countArr],
-      sortedIndices: [...sortedIndices],
+      indices,
+      description,
       stats: { ...stats },
     };
     Object.freeze(step.array);
     Object.freeze(step.auxiliaryArray);
-    Object.freeze(step.sortedIndices);
     Object.freeze(step.stats);
     Object.freeze(step);
     steps.push(step);
   };
 
-  // Phase 1: Frequency Array
+  // Phase 1: Counting
   for (let i = 0; i < n; i++) {
-    stats.comparisons++; 
-    countArr[arr[i]]++;
-    pushStep({
-      type: 'count',
-      indices: [i],
-      description: `Counting occurrence of ${arr[i]}. Incremented Aux[${arr[i]}].`
-    });
+    const val = inputArray[i];
+    countArr[val]++;
+    pushStep('count', `Increment count of ${val} in the frequency array.`, [i]);
   }
 
   // Phase 2: Prefix Sum
   for (let i = 1; i <= maxVal; i++) {
     countArr[i] += countArr[i - 1];
+    pushStep('prefix', `Building prefix sum: count[${i}] = count[${i}] + count[${i-1}] (${countArr[i]})`);
   }
-  pushStep({
-    type: 'prefix',
-    indices: [],
-    description: `Converted Context Array into Prefix Sum array resolving final placements.`
-  });
 
-  // Phase 3: Placement (Output Array)
-  const outputArr = new Array(n).fill(null);
+  // Phase 3: Placement
+  // We use a zeroed array to represent the output buffer being filled
+  const outputArr = new Array(n).fill(0);
+  visualizationArray = [...outputArr]; // Switch visual to the output buffer
+  
   for (let i = n - 1; i >= 0; i--) {
-    const val = arr[i];
+    const val = inputArray[i];
     const pos = countArr[val] - 1;
     
     countArr[val]--;
     outputArr[pos] = val;
-
-    pushStep({
-      type: 'overwrite',
-      indices: [i], 
-      description: `Placing ${val} at index ${pos} in output buffer. Decrementing Aux[${val}].`
-    });
-  }
-
-  // Phase 4: Copy Back completely
-  for (let i = 0; i < n; i++) {
-    stats.writes++;
-    arr[i] = outputArr[i];
-    sortedIndices.push(i);
+    visualizationArray = [...outputArr];
     
-    pushStep({
-      type: 'overwrite',
-      indices: [i],
-      description: `Writing mapped sorted value ${arr[i]} back to primary array.`
-    });
+    stats.writes++;
+    pushStep('overwrite', `Placing ${val} at sorted position ${pos} and decrementing its count.`, [pos]);
   }
 
-  pushStep({
-    type: 'done',
-    indices: [],
-    description: '✅ Array is fully sorted!',
-  });
+  pushStep('done', 'Sorting complete! The array is now in non-decreasing order.');
 
   return steps;
 }

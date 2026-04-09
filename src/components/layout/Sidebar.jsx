@@ -107,7 +107,7 @@ export default function Sidebar({ open, onClose }) {
         className={clsx(
           'fixed top-16 left-0 z-30 h-[calc(100vh-4rem)] w-72 flex flex-col border-r transition-transform duration-300 ease-in-out',
           'bg-light-surface dark:bg-dark-bg border-light-border dark:border-dark-border',
-          'lg:translate-x-0 lg:static lg:z-auto',
+          'lg:translate-x-0 lg:static lg:h-full lg:z-auto',
           open ? 'translate-x-0' : '-translate-x-full'
         )}
       >
