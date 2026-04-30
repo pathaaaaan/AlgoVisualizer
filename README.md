@@ -1,4 +1,4 @@
-# DS AlgoVisualizer
+# AlgoVisualizer
 
 An interactive Data Structures & Algorithms visualizer built with React and Vite. Step through sorting algorithms, searching algorithms, and core data structures with smooth, real-time animations.
 
